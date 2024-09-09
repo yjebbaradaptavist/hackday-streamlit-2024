@@ -85,7 +85,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 # Initialize connection.
-conn = my_db.connect(**st.secrets.db_credentials)
+conn = st.connection("snowflake")
 
 # Perform query.
 df = conn.query("SELECT"
