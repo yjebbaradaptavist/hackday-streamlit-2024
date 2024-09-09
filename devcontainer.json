@@ -1,0 +1,12 @@
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "yjebbaradaptavist/hackday-streamlit-2024": {
+          "permissions": {
+            "issues": "write"
+          }
+        }
+      }
+    }
+  }
+}
