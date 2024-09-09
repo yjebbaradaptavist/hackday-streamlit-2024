@@ -110,4 +110,6 @@ st.title("Auto Filter Dataframes in Streamlit")
 filtered_df = filter_dataframe(df)
 styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Pilot' else 'red'}", subset='STATUS')
 
+st.write("Will's here")
+
 st.dataframe(styled_df, hide_index=True)
