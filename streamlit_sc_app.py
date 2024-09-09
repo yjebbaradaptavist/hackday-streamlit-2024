@@ -8,10 +8,26 @@ from pandas.api.types import (
     is_object_dtype,
 )
 import pandas as pd
+import time
+import numpy as np
+
 
 # Page layout
 ## Page expands to full width
-st.set_page_config(layout="wide")
+st.set_page_config(
+    page_title="Service Catalog App",
+    page_icon="",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+#---------------------------------#
+# Page layout (continued)
+## Divide page to 3 columns (col1 = sidebar, col2 and col3 = page contents)
+col1 = st.sidebar
+col2, col3 = st.columns((2,1))
+# Sidebar + Main panel
+col1.header('Filters Options')
+
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -23,12 +39,13 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered dataframe
     """
-    modify = st.checkbox("Add filters")
+    modify = col1.checkbox("Add filters")
 
     if not modify:
         return df
 
     df = df.copy()
+
 
     # Try to convert datetimes into a standard format (datetime, no timezone)
     for col in df.columns:
@@ -41,7 +58,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         if is_datetime64_any_dtype(df[col]):
             df[col] = df[col].dt.tz_localize(None)
 
-    modification_container = st.container()
+    modification_container = col1.container()
 
     with modification_container:
         to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
@@ -91,7 +108,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 conn = st.connection("snowflake")
 
 # Perform query.
-df = conn.query("SELECT"
+df = conn.query("SELECT "
                     " SKU,"
                     " TARGET_SIZE_OF_USERS,"
                     " TARGET_CUSTOMER,"
@@ -109,11 +126,61 @@ df = conn.query("SELECT"
                 ttl=600
 )
 
-st.title("Auto Filter Dataframes in Streamlit")
-filtered_df = filter_dataframe(df)
-styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Pilot' else 'red'}", subset='STATUS')
+select, details = st.tabs(["Select SKUs", "See details of selected"])
 
-st.header("\n Select filtered data on the sidebar as a test please \n ")
+with select: # Add select tab #############################################
+    st.title("Auto Filter Dataframes in Streamlit")
+    st.header("\n Select filters on the sidebar to get to information that you need \n ")
+    filtered_df = filter_dataframe(df)
+    filtered_df.rename(columns=lambda name: name.replace('_', ' ').title(), inplace=True)
+    styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Live' else 'yellow'}", subset='Status')
 
+    event = st.dataframe(styled_df, hide_index=True,selection_mode="multi-row",use_container_width=True,on_select="rerun")
 
-st.dataframe(styled_df, hide_index=True)
+    st.header("Selected SKU")
+    sku = event.selection.rows
+    selected_df = filtered_df.iloc[sku]
+    st.dataframe(
+            selected_df,
+            use_container_width=True,
+        )
+    
+with details: # Add compare tab ###########################################
+    col4, col5 = st.columns((2,1))
+    selected_df = filtered_df.iloc[sku]["Synopsis Marketing"]
+    col4.dataframe(selected_df,use_container_width=True)
+
+    selected_df = filtered_df.iloc[sku]["Target Size Of Users"]
+    col4.dataframe(selected_df,use_container_width=True)
+
+    selected_df = filtered_df.iloc[sku]["Delivery Languages"]
+    col5.dataframe(selected_df,use_container_width=True)
+
+    selected_df = filtered_df.iloc[sku]["Delivery Business Unit"]
+    col5.dataframe(selected_df,use_container_width=True)
+    
+
+    st.header("A chart to prove the point")
+    last_rows = np.random.randn(1, 1)
+    chart = st.line_chart(last_rows)
+    for i in range(1, 101):
+        new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
+        chart.add_rows(new_rows)
+        last_rows = new_rows
+        time.sleep(0.05)
+    
+    # Streamlit widgets automatically run the script from top to bottom. Since
+    # this button is not connected to any other logic, it just causes a plain
+    # rerun.
+    st.button("Re-run")
+
+    st.write(filtered_df.columns)    
+
+#Sku
+#Target Size Of Users
+#Target Customer
+#Synopsis Marketing
+#Status
+#Service Type
+#Delivery Languages
+#Delivery Business Unit
