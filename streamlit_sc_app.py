@@ -135,24 +135,6 @@ with select: # Add select tab #############################################
     filtered_df.rename(columns=lambda name: name.replace('_', ' ').title(), inplace=True)
     styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Live' else 'yellow'}", subset='Status')
 
-    #def dataframe_with_selections(df):
-    #    df_with_selections = df.copy()
-    #    df_with_selections.insert(0, "Select", False)
-    #    edited_df = st.data_editor(
-    #        df_with_selections,
-    #        hide_index=True,
-    #        column_config={"Select": st.column_config.CheckboxColumn(required=True)},
-    #        disabled=df.columns,
-    #    )
-    #    selected_indices = list(np.where(edited_df.Select)[0])
-    #    #selected_rows = df[edited_df.Select]
-    #    return {"selected_rows_indices": selected_indices}#, "selected_rows": selected_rows}
-
-
-    #selection = dataframe_with_selections(filtered_df)
-    #st.write("Your selection:")
-    #st.write(selection)
-
     event = st.dataframe(styled_df, hide_index=True,selection_mode="multi-row",use_container_width=True,on_select="rerun")
 
     st.header("Selected SKU")
@@ -162,7 +144,6 @@ with select: # Add select tab #############################################
             selected_df,
             use_container_width=True,
         )
-
     
 with details: # Add compare tab ###########################################
     col4, col5 = st.columns((2,1))
@@ -188,7 +169,6 @@ with details: # Add compare tab ###########################################
         last_rows = new_rows
         time.sleep(0.05)
     
-
     # Streamlit widgets automatically run the script from top to bottom. Since
     # this button is not connected to any other logic, it just causes a plain
     # rerun.
