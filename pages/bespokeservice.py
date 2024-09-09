@@ -88,16 +88,16 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 # Initialize connection.
-conn = st.connection("snowflake")
+conn2 = st.connection("snowflake")
 
 # Perform query.
-df = conn.query("SELECT"
-                    " SKU,"
+df2 = conn2.query("SELECT"                   
+                   " SERVICE_TYPE,"
+                    "  SKU,"
                     " TARGET_SIZE_OF_USERS,"
                     " TARGET_CUSTOMER,"
                     " SYNOPSIS_MARKETING,"
                     " STATUS,"
-                    " SERVICE_TYPE,"
                     " DELIVERY_LANGUAGES,"
                     " DELIVERY_BUSINESS_UNIT"
                 " FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT"
@@ -105,15 +105,14 @@ df = conn.query("SELECT"
                 "   SELECT MAX(landing_metadata_file_name)"
                 "   FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT"
                 " )"
-                " AND SKU NOT IN ('')",
+                " AND SKU NOT IN ('') AND SERVICE_TYPE IN ('Bespoke')",
                 ttl=600
 )
 
-st.title("Auto Filter Dataframes in Streamlit")
-filtered_df = filter_dataframe(df)
-styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Pilot' else 'red'}", subset='STATUS')
+st.title("\n This page should only have Bespoke Services \n ")
 
-st.header("\n Select filtered data on the sidebar as a test please \n ")
+filtered_df2 = filter_dataframe(df2)
+styled_df2 = filtered_df2.style.map(lambda x: f"background-color: {'green' if x=='Pilot' else 'red'}", subset='STATUS')
 
+st.dataframe(styled_df2, hide_index=True)
 
-st.dataframe(styled_df, hide_index=True)
