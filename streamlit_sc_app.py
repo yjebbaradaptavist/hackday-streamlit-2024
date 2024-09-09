@@ -113,8 +113,6 @@ st.title("Auto Filter Dataframes in Streamlit")
 filtered_df = filter_dataframe(df)
 styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Pilot' else 'red'}", subset='STATUS')
 
-st.write("Kate Test")
-
 st.header("\n Select filtered data on the sidebar as a test please \n ")
 
 
