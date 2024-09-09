@@ -1,5 +1,3 @@
-# streamlit_app.py
-
 import streamlit as st
 from pandas.api.types import (
     is_categorical_dtype,
@@ -9,9 +7,6 @@ from pandas.api.types import (
 )
 import pandas as pd
 
-# Page layout
-## Page expands to full width
-st.set_page_config(layout="wide")
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -92,12 +87,12 @@ conn = st.connection("snowflake")
 
 # Perform query.
 df = conn.query("SELECT"
+                    " SERVICE_TYPE,"
                     " SKU,"
                     " TARGET_SIZE_OF_USERS,"
                     " TARGET_CUSTOMER,"
                     " SYNOPSIS_MARKETING,"
-                    " STATUS,"
-                    " SERVICE_TYPE,"
+                    " STATUS,"       
                     " DELIVERY_LANGUAGES,"
                     " DELIVERY_BUSINESS_UNIT"
                 " FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT"
@@ -105,15 +100,14 @@ df = conn.query("SELECT"
                 "   SELECT MAX(landing_metadata_file_name)"
                 "   FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT"
                 " )"
-                " AND SKU NOT IN ('')",
+                " AND SKU NOT IN ('')"
+                " AND SERVICE_TYPE = 'Standard' ",
                 ttl=600
 )
 
-st.title("Auto Filter Dataframes in Streamlit")
+st.title("\n This page should only have Standard Services \n ")
 filtered_df = filter_dataframe(df)
 styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Pilot' else 'red'}", subset='STATUS')
-
-st.header("\n Select filtered data on the sidebar as a test please \n ")
 
 
 st.dataframe(styled_df, hide_index=True)
