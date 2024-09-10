@@ -128,37 +128,50 @@ df = conn.query("SELECT "
 
 select, details = st.tabs(["Select SKUs", "See details of selected"])
 
-with select: # Add select tab #############################################
+with select:  # Add select tab
     st.title("Auto Filter Dataframes in Streamlit")
     st.header("\n Select filters on the sidebar to get to information that you need \n ")
     filtered_df = filter_dataframe(df)
     filtered_df.rename(columns=lambda name: name.replace('_', ' ').title(), inplace=True)
     styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Live' else 'yellow'}", subset='Status')
 
-    event = st.dataframe(styled_df, hide_index=True,selection_mode="multi-row",use_container_width=True,on_select="rerun")
+    event = st.dataframe(styled_df, hide_index=True, selection_mode="multi-row", use_container_width=True, on_select="rerun")
 
     st.header("Selected SKU")
     sku = event.selection.rows
     selected_df = filtered_df.iloc[sku]
-    st.dataframe(
-            selected_df,
-            use_container_width=True,
+    st.dataframe(selected_df, use_container_width=True)
+
+with details:  # Add details tab
+    if sku:
+        # Convert the SKU values from the selected rows into a list
+        selected_skus = selected_df['Sku'].tolist()
+        # Convert list to a format suitable for SQL IN clause
+        sku_str = "', '".join(selected_skus)
+
+        detailed_query = f"""
+        SELECT *
+        FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
+        WHERE landing_metadata_file_name = (
+            SELECT MAX(landing_metadata_file_name)
+            FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
         )
-    
-with details: # Add compare tab ###########################################
-    col4, col5 = st.columns((2,1))
-    selected_df = filtered_df.iloc[sku]["Synopsis Marketing"]
-    col4.dataframe(selected_df,use_container_width=True)
+        AND SKU IN ('{sku_str}')
+        """
 
-    selected_df = filtered_df.iloc[sku]["Target Size Of Users"]
-    col4.dataframe(selected_df,use_container_width=True)
+        # Use a fresh connection for the detailed query
+        detailed_df = conn.query(detailed_query)
 
-    selected_df = filtered_df.iloc[sku]["Delivery Languages"]
-    col5.dataframe(selected_df,use_container_width=True)
-
-    selected_df = filtered_df.iloc[sku]["Delivery Business Unit"]
-    col5.dataframe(selected_df,use_container_width=True)
-    
+        if not detailed_df.empty:
+            detailed_df.set_index('SKU', inplace=True)
+            transposed_df = detailed_df.transpose()
+            transposed_df.reset_index(inplace=True)
+            transposed_df.rename(columns={'index': 'Field Name'}, inplace=True)
+            st.dataframe(transposed_df, use_container_width=True)
+        else:
+            st.write("No details found for the selected SKUs.")
+    else:
+        st.write("Please select a SKU to see detailed information.")
 
     st.header("A chart to prove the point")
     last_rows = np.random.randn(1, 1)
@@ -168,14 +181,8 @@ with details: # Add compare tab ###########################################
         chart.add_rows(new_rows)
         last_rows = new_rows
         time.sleep(0.05)
-    
-    # Streamlit widgets automatically run the script from top to bottom. Since
-    # this button is not connected to any other logic, it just causes a plain
-    # rerun.
+
     st.button("Re-run")
-
-    st.write(filtered_df.columns)    
-
 #Sku
 #Target Size Of Users
 #Target Customer
