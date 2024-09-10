@@ -39,13 +39,13 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered dataframe
     """
-    modify = col1.checkbox("Add filters")
-
-    if not modify:
-        return df
+    # Remove Add Filter Box
+    #modify = col1.checkbox("Add filters")
+#
+    #if not modify:
+    #    return df
 
     df = df.copy()
-
 
     # Try to convert datetimes into a standard format (datetime, no timezone)
     for col in df.columns:
@@ -108,23 +108,25 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 conn = st.connection("snowflake")
 
 # Perform query.
-df = conn.query("SELECT "
-                    " SKU,"
-                    " TARGET_SIZE_OF_USERS,"
-                    " TARGET_CUSTOMER,"
-                    " SYNOPSIS_MARKETING,"
-                    " STATUS,"
-                    " SERVICE_TYPE,"
-                    " DELIVERY_LANGUAGES,"
-                    " DELIVERY_BUSINESS_UNIT"
-                " FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT"
-                " WHERE landing_metadata_file_name = ("
-                "   SELECT MAX(landing_metadata_file_name)"
-                "   FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT"
-                " )"
-                " AND SKU NOT IN ('')",
-                ttl=600
-)
+df = conn.query("""SELECT DISTINCT 
+                                 LEFT(SKU, LEN(SKU) - 3) AS SKU,
+                                 SERVICE_LINE,
+                                 SERVICE_ITEM,
+                                 SYNOPSIS_MARKETING AS SYNOPSIS,
+                                 SERVICE_TYPE,
+                                 RELATED_PRACTICES,
+                                 DELIVERY_BUSINESS_UNIT,
+                                 STATUS,
+                                 DELIVERY_TEAMS,
+                                 DELIVERY_LANGUAGES,
+                             FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
+                             WHERE landing_metadata_file_name = (
+                               SELECT MAX(landing_metadata_file_name)
+                               FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
+                             )
+                             AND SKU NOT IN ('')""",
+                                ttl=600
+                            )
 
 select, details = st.tabs(["Select SKUs", "See details of selected"])
 
@@ -156,7 +158,7 @@ with details:  # Add details tab
             SELECT MAX(landing_metadata_file_name)
             FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
         )
-        AND SKU IN ('{sku_str}')
+        AND LEFT(SKU, LEN(SKU) - 3) IN ('{sku_str}')
         """
 
         # Use a fresh connection for the detailed query
