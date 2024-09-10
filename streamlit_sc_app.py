@@ -8,25 +8,8 @@ from pandas.api.types import (
     is_object_dtype,
 )
 import pandas as pd
-import time
-import numpy as np
+from streamlit_extras.stylable_container import stylable_container
 
-
-# Page layout
-## Page expands to full width
-st.set_page_config(
-    page_title="Service Catalog App",
-    page_icon="",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
-#---------------------------------#
-# Page layout (continued)
-## Divide page to 3 columns (col1 = sidebar, col2 and col3 = page contents)
-col1 = st.sidebar
-col2, col3 = st.columns((2,1))
-# Sidebar + Main panel
-col1.header('Filters Options')
 
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -108,8 +91,10 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 conn = st.connection("snowflake")
 
 # Perform query.
-df = conn.query("SELECT "
-                    " SKU,"
+df = conn.query("SELECT"
+                    " SERVICE_ITEM,"
+                    " SKU, "
+                    " VARIANT_NAME, "
                     " TARGET_SIZE_OF_USERS,"
                     " TARGET_CUSTOMER,"
                     " SYNOPSIS_MARKETING,"
@@ -126,61 +111,34 @@ df = conn.query("SELECT "
                 ttl=600
 )
 
-select, details = st.tabs(["Select SKUs", "See details of selected"])
+st.title("Service Catalog Streamlit App")
+filtered_df = filter_dataframe(df)
 
-with select: # Add select tab #############################################
-    st.title("Auto Filter Dataframes in Streamlit")
-    st.header("\n Select filters on the sidebar to get to information that you need \n ")
-    filtered_df = filter_dataframe(df)
-    filtered_df.rename(columns=lambda name: name.replace('_', ' ').title(), inplace=True)
-    styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Live' else 'yellow'}", subset='Status')
+variant_name_list = filtered_df['VARIANT_NAME'].tolist()
 
-    event = st.dataframe(styled_df, hide_index=True,selection_mode="multi-row",use_container_width=True,on_select="rerun")
+service_item_list = filtered_df['SERVICE_ITEM'].tolist()
 
-    st.header("Selected SKU")
-    sku = event.selection.rows
-    selected_df = filtered_df.iloc[sku]
-    st.dataframe(
-            selected_df,
-            use_container_width=True,
+if 'pages' not in st.session_state:
+    st.session_state['pages'] = './pages'
+for i in range(0,len(service_item_list)):
+    variant_name = "" if variant_name_list[i] == "-" else variant_name_list[i]
+    service_item = service_item_list[i]
+    label_name = service_item if variant_name == "" else f"{service_item} {variant_name}"
+    with stylable_container(
+    "green",
+    css_styles="""
+    button {
+        background-color: black;
+        color: white;
+    }"""
+    ):
+        is_clicked = st.button(label=label_name,
+                  key=f"{service_item}{variant_name}{i}",
+                  use_container_width=True,
+                  
         )
-    
-with details: # Add compare tab ###########################################
-    col4, col5 = st.columns((2,1))
-    selected_df = filtered_df.iloc[sku]["Synopsis Marketing"]
-    col4.dataframe(selected_df,use_container_width=True)
+        if is_clicked:
+            formatted_label_name = label_name.replace(" ","_").lower()
+            st.switch_page(f"./pages/{formatted_label_name}.py")
+        
 
-    selected_df = filtered_df.iloc[sku]["Target Size Of Users"]
-    col4.dataframe(selected_df,use_container_width=True)
-
-    selected_df = filtered_df.iloc[sku]["Delivery Languages"]
-    col5.dataframe(selected_df,use_container_width=True)
-
-    selected_df = filtered_df.iloc[sku]["Delivery Business Unit"]
-    col5.dataframe(selected_df,use_container_width=True)
-    
-
-    st.header("A chart to prove the point")
-    last_rows = np.random.randn(1, 1)
-    chart = st.line_chart(last_rows)
-    for i in range(1, 101):
-        new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-        chart.add_rows(new_rows)
-        last_rows = new_rows
-        time.sleep(0.05)
-    
-    # Streamlit widgets automatically run the script from top to bottom. Since
-    # this button is not connected to any other logic, it just causes a plain
-    # rerun.
-    st.button("Re-run")
-
-    st.write(filtered_df.columns)    
-
-#Sku
-#Target Size Of Users
-#Target Customer
-#Synopsis Marketing
-#Status
-#Service Type
-#Delivery Languages
-#Delivery Business Unit
