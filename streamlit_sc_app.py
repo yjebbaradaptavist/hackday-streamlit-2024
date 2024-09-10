@@ -9,6 +9,7 @@ from pandas.api.types import (
 )
 import pandas as pd
 import time
+import re
 import numpy as np
 
 
@@ -18,6 +19,7 @@ st.set_page_config(
     page_title="Service Catalog App",
     page_icon="🎈",
     layout="wide",
+    initial_sidebar_state="expanded"
 )
 #---------------------------------#
 # Page layout (continued)
@@ -73,16 +75,40 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     modification_container = col1.container()
 
     with modification_container:
-        to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
+        to_filter_columns = st.multiselect("Select filters", df.columns)
         for column in to_filter_columns:
             left, right = st.columns((1, 20))
+            if column == 'DELIVERY_LANGUAGES':
+                # For DELIVERY_LANGUAGES, use a special input that allows selecting multiple languages
+                selected_languages = right.multiselect(
+                    f"Select values for {column}",
+                    options=np.unique([lang.strip() for langs in df[column].dropna().str.split(',') for lang in langs]),
+                    default=None,
+                )
+                if selected_languages:
+                    # Create a regex pattern that matches any of the selected languages
+                    regex_pattern = '|'.join([re.escape(lang) for lang in selected_languages])
+                    df = df[df[column].str.contains(regex_pattern, case=False, na=False)]
+                continue    
+            elif column == 'DELIVERY_TEAMS':
+                # Apply similar logic for DELIVERY_TEAMS
+                selected_teams = right.multiselect(
+                    f"Select values for {column}",
+                    options=np.unique([team.strip() for teams in df[column].dropna().str.split(',') for team in teams]),
+                    default=None,
+                )
+                if selected_teams:
+                    # Create a regex pattern that matches any of the selected teams
+                    regex_pattern = '|'.join([re.escape(team) for team in selected_teams])
+                    df = df[df[column].str.contains(regex_pattern, case=False, na=False)]
+                continue 
             if "STATUS" == column:
                 st.write("filter above")
             
             # Treat columns with < 10 unique values as categorical
             elif is_categorical_dtype(df[column]) or df[column].nunique() < 10:
                 user_cat_input = right.multiselect(
-                    f"Values for {column}",
+                    f"Select values for {column}",
                     df[column].unique(),
                     default=list(df[column].unique()),
                 )
@@ -113,10 +139,10 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     df = df.loc[df[column].between(start_date, end_date)]
             else:
                 user_text_input = right.text_input(
-                    f"Substring or regex in {column}",
+                    f"Search Keyword(s) in {column}",
                 )
                 if user_text_input:
-                    df = df[df[column].astype(str).str.contains(user_text_input)]
+                    df = df[df[column].astype(str).str.contains(user_text_input, case=False)]
 
     return df
 # Initialize connection.
@@ -146,7 +172,7 @@ df = conn.query("""SELECT DISTINCT
 select, details = st.tabs(["Select SKUs", "See details of selected"])
 
 with select:  # Add select tab
-    st.title("Auto Filter Dataframes in Streamlit")
+    st.title("Adaptavist Service Catalog")
     st.header("\n Select filters on the sidebar to get to information that you need \n ")
     filtered_df = filter_dataframe(df)
     filtered_df.rename(columns=lambda name: name.replace('_', ' ').title(), inplace=True)
