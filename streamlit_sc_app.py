@@ -16,9 +16,8 @@ import numpy as np
 ## Page expands to full width
 st.set_page_config(
     page_title="Service Catalog App",
-    page_icon="",
+    page_icon="🎈",
     layout="wide",
-    initial_sidebar_state="collapsed"
 )
 #---------------------------------#
 # Page layout (continued)
@@ -58,14 +57,30 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         if is_datetime64_any_dtype(df[col]):
             df[col] = df[col].dt.tz_localize(None)
 
+    # WT - preset filters in STATUS column:
+    if "STATUS" in df.columns:
+        # Multiselect filter for the 'STATUS' column, defaulting to 'Live'
+        selected_status = col1.multiselect(
+            'Filter by Status', 
+            options=sorted(df['STATUS'].unique()),
+            default=["Live"]  # Default to Live
+        )
+        # Filter the dataframe based on selected languages
+        if selected_status:
+            df = df[df['STATUS'].apply(
+                lambda x: any(status in x for status in selected_status)
+            )]
     modification_container = col1.container()
 
     with modification_container:
         to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
         for column in to_filter_columns:
             left, right = st.columns((1, 20))
+            if "STATUS" == column:
+                st.write("filter above")
+            
             # Treat columns with < 10 unique values as categorical
-            if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
+            elif is_categorical_dtype(df[column]) or df[column].nunique() < 10:
                 user_cat_input = right.multiselect(
                     f"Values for {column}",
                     df[column].unique(),
