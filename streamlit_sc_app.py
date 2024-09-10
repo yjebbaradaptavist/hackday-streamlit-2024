@@ -22,12 +22,13 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered dataframe
     """
-    modify = st.checkbox("Add filters")
+    modify = col1.checkbox("Add filters")
 
     if not modify:
         return df
 
     df = df.copy()
+
 
     # Try to convert datetimes into a standard format (datetime, no timezone)
     for col in df.columns:
@@ -40,7 +41,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         if is_datetime64_any_dtype(df[col]):
             df[col] = df[col].dt.tz_localize(None)
 
-    modification_container = st.container()
+    modification_container = col1.container()
 
     with modification_container:
         to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
