@@ -8,6 +8,8 @@ from pandas.api.types import (
     is_object_dtype,
 )
 import pandas as pd
+from streamlit_extras.stylable_container import stylable_container
+
 
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -89,7 +91,9 @@ conn = st.connection("snowflake")
 
 # Perform query.
 df = conn.query("SELECT"
-                    " SKU,"
+                    " SERVICE_ITEM,"
+                    " SKU, "
+                    " VARIANT_NAME, "
                     " TARGET_SIZE_OF_USERS,"
                     " TARGET_CUSTOMER,"
                     " SYNOPSIS_MARKETING,"
@@ -106,10 +110,34 @@ df = conn.query("SELECT"
                 ttl=600
 )
 
-st.title("Auto Filter Dataframes in Streamlit")
+st.title("Service Catalog Streamlit App")
 filtered_df = filter_dataframe(df)
-styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Pilot' else 'red'}", subset='STATUS')
 
-st.write("Will's here")
+variant_name_list = filtered_df['VARIANT_NAME'].tolist()
 
-st.dataframe(styled_df, hide_index=True)
+service_item_list = filtered_df['SERVICE_ITEM'].tolist()
+
+if 'pages' not in st.session_state:
+    st.session_state['pages'] = './pages'
+for i in range(0,len(service_item_list)):
+    variant_name = "" if variant_name_list[i] == "-" else variant_name_list[i]
+    service_item = service_item_list[i]
+    label_name = service_item if variant_name == "" else f"{service_item} {variant_name}"
+    with stylable_container(
+    "green",
+    css_styles="""
+    button {
+        background-color: black;
+        color: white;
+    }"""
+    ):
+        is_clicked = st.button(label=label_name,
+                  key=f"{service_item}{variant_name}{i}",
+                  use_container_width=True,
+                  
+        )
+        if is_clicked:
+            formatted_label_name = label_name.replace(" ","_").lower()
+            st.switch_page(f"./pages/{formatted_label_name}.py")
+        
+
