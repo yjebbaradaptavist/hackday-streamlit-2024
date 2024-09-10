@@ -142,7 +142,18 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     f"Search Keyword(s) in {column}",
                 )
                 if user_text_input:
-                    df = df[df[column].astype(str).str.contains(user_text_input, case=False)]
+                    # Remove or standardize symbols in user input
+                    user_text_input_processed = re.sub(r'[-]', ' ', user_text_input)  # Replace hyphens with space
+                    keywords = user_text_input_processed.split()
+
+                    # Build a regex pattern to match all keywords
+                    regex_pattern = '(?=.*' + ')(?=.*'.join([re.escape(keyword) for keyword in keywords]) + ')'
+
+                    # Preprocess DataFrame text to remove or standardize symbols
+                    df_processed = df[column].astype(str).apply(lambda x: re.sub(r'[-]', ' ', x))
+
+                    # Perform case-insensitive search on preprocessed text
+                    df = df[df_processed.str.contains(regex_pattern, case=False, regex=True)]
 
     return df
 # Initialize connection.
@@ -173,7 +184,6 @@ select, details = st.tabs(["Select SKUs", "See details of selected"])
 
 with select:  # Add select tab
     st.title("Adaptavist Service Catalog")
-    st.header("\n Select filters on the sidebar to get to information that you need \n ")
     filtered_df = filter_dataframe(df)
     filtered_df.rename(columns=lambda name: name.replace('_', ' ').title(), inplace=True)
     styled_df = filtered_df.style.map(lambda x: f"background-color: {'green' if x=='Live' else 'yellow'}", subset='Status')
@@ -216,7 +226,7 @@ with details:  # Add details tab
     else:
         st.write("Please select a SKU to see detailed information.")
 
-    st.header("A chart to prove the point")
+    st.header("Sales Trends demo chart")
     last_rows = np.random.randn(1, 1)
     chart = st.line_chart(last_rows)
     for i in range(1, 101):
