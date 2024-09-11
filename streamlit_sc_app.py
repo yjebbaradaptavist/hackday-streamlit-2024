@@ -203,7 +203,30 @@ with details:  # Add details tab
         sku_str = "', '".join(selected_skus)
 
         detailed_query = f"""
-        SELECT *
+        SELECT LEFT(SKU, LEN(SKU) - 3) AS SKU,
+            SERVICE_LINE,
+            SERVICE_ITEM,
+            VARIANT_NAME,
+            VARIANT_CODE,
+            SYNOPSIS_MARKETING AS SYNOPSIS,
+            SERVICE_TYPE,
+            RELATED_PRACTICES,
+            DELIVERY_BUSINESS_UNIT,
+            STATUS,
+            DELIVERY_TEAMS,
+            DELIVERY_LANGUAGES,
+            TARGET_CUSTOMER,
+            TARGET_SIZE_OF_USERS,
+            PUBLISHED,
+            OWNER_TECHNICAL_OWNER,
+            OWNER_SERVICE_OWNER,
+            OWNER_MARKETING_OWNER,
+            JOB_CODES,
+            DURATION,
+            DESCRIPTION_MARKETING,
+            DELIVERY_OPTIONS,
+            DELIVERY_CAPACITY,
+            CONTRACT_TYPE
         FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
         WHERE landing_metadata_file_name = (
             SELECT MAX(landing_metadata_file_name)
