@@ -171,11 +171,6 @@ df = conn.query("""SELECT DISTINCT
                                  STATUS,
                                  DELIVERY_TEAMS,
                                  DELIVERY_LANGUAGES,
-                                 REFERENCE_LINKS_PUBLIC_WEBSITE,
-                                 REFERENCE_LINKS_SERVICE_DESCRIPTION,
-                                 REFERENCE_LINKS_MARKETING_COLLATERAL,
-                                 REFERENCE_LINKS_SALES_DOCUMENTATION,
-                                 REFERENCE_LINKS_TECHNICAL_DOCUMENTATION
                              FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
                              WHERE landing_metadata_file_name = (
                                SELECT MAX(landing_metadata_file_name)
@@ -232,6 +227,11 @@ with details:  # Add details tab
             DELIVERY_OPTIONS,
             DELIVERY_CAPACITY,
             CONTRACT_TYPE
+            REFERENCE_LINKS_PUBLIC_WEBSITE,
+            REFERENCE_LINKS_SERVICE_DESCRIPTION,
+            REFERENCE_LINKS_MARKETING_COLLATERAL,
+            REFERENCE_LINKS_SALES_DOCUMENTATION,
+            REFERENCE_LINKS_TECHNICAL_DOCUMENTATION
         FROM PROD_PREP.OUTPUT.VIEW_SERVICE_CATALOG_OUTPUT
         WHERE landing_metadata_file_name = (
             SELECT MAX(landing_metadata_file_name)
